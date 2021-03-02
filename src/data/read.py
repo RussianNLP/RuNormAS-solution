@@ -48,7 +48,8 @@ class DataReader(object):
                     all_files, total=len(all_files), leave=False,
                     desc=f"Parsing files from {self.part} part..."
             ):
-                name, ext = os.path.basename(fn)
+                name = os.path.basename(fn)
+                name, ext = os.path.splitext(name)
                 if ext == ".txt":
                     with open(fn, encoding='utf-8') as file_obj:
                         text = file_obj.read()
@@ -64,13 +65,13 @@ class DataReader(object):
 
     def _make_raw_data(self):
         with open(os.path.join(self.output_dir, self.file_list_name), "w") as file_list:
-            for fn in self.texts:
-                text = self.texts[fn]
+            for name in tqdm(self.texts, total=len(self.texts), leave=False, desc="Making raw files..."):
+                text = self.texts[name]
                 if self.answer_sep in text:
                     print("answer_sep in file", fn)
-                ann = self.anns[fn]
+                ann = self.anns[name]
                 if self.part == self.train_part_name:
-                    norm = self.norms[fn]
+                    norm = self.norms[name]
                     if len(norm) != len(ann):
                         raise ValueError(f"Lens of norm and ann should be same. Error with file name {fn}")
                 else:
@@ -92,7 +93,7 @@ class DataReader(object):
                         )
                     file_texts.append(final_text)
 
-                res_fn = os.path.join(self.output_dir, self.files_dir_name, f"{fn}.txt")
+                res_fn = os.path.join(self.output_dir, self.files_dir_name, f"{name}.txt")
                 file_list.write(f"{res_fn}\n")
 
                 final_file_text = "\n".join(file_texts)
@@ -109,7 +110,7 @@ def add_data_reader_arguments(parser):
         help='path to the data dir'
     )
     group.add_argument(
-        '--tokenizer-path',
+        '--tokenizer_name',
         type=str,
         default="sberbank-ai/rugpt3xl",
         help='path or name of tokenizer for loading from transformers'
