@@ -2,6 +2,7 @@ from tqdm import tqdm
 import os
 from src.utils import get_all_files_from_dir
 from transformers import GPT2Tokenizer
+import argparse
 
 
 class DataReader(object):
@@ -32,6 +33,13 @@ class DataReader(object):
         self.files_dir_name = "files"
         os.makedirs(os.path.join(self.output_dir, self.files_dir_name), exist_ok=True)
         self.texts_for_model = []
+
+    def __call__(self):
+        self.prc()
+
+    def prc(self):
+        self._read_files()
+        self._make_raw_data()
 
     def _read_files(self):
         for data_part in self.data_parts:
@@ -91,3 +99,58 @@ class DataReader(object):
                 with open(res_fn, "w", encoding='utf-8') as file_out:
                     file_out.write(final_file_text)
                 self.texts_for_model.append(final_file_text)
+
+
+def add_data_reader_arguments(parser):
+    group = parser.add_argument_group('data_reader', 'Data reader paths for processing raw files.')
+    group.add_argument(
+        '--path',
+        type=str,
+        help='path to the data dir'
+    )
+    group.add_argument(
+        '--tokenizer-path',
+        type=str,
+        default="sberbank-ai/rugpt3xl",
+        help='path or name of tokenizer for loading from transformers'
+    )
+    group.add_argument(
+        '--output_dir',
+        type=str,
+        help='path to the data dir'
+    )
+    group.add_argument(
+        '--part',
+        type=str,
+        default="train",
+        help='partition name of data: train or test'
+    )
+    group.add_argument(
+        '--train_part_name',
+        type=str,
+        default="train",
+        help='name of train data partition.'
+    )
+    group.add_argument(
+        '--data_parts',
+        type=str,
+        default="generic,named",
+        help='names of directories in data: generic,named.'
+    )
+    group.add_argument(
+        '--answer_sep',
+        type=str,
+        default=" A: ",
+        help='separator between query and answer.'
+    )
+    return parser
+
+
+if __name__ == "__main__":
+    arg_parser = argparse.ArgumentParser(description="Prepare data for language modeling")
+    arg_parser = add_data_reader_arguments(arg_parser)
+    args = arg_parser.parse_args()
+    args = vars(args)
+    args["data_parts"] = args["data_parts"].split(",")
+    reader = DataReader(**args)
+    reader()
