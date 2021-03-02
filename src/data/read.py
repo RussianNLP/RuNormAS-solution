@@ -94,6 +94,7 @@ class DataReader(object):
                     file_texts.append(final_text)
 
                 res_fn = os.path.join(self.output_dir, self.files_dir_name, f"{name}.txt")
+                res_fn = os.path.abspath(res_fn)
                 file_list.write(f"{res_fn}\n")
 
                 final_file_text = "\n".join(file_texts)
