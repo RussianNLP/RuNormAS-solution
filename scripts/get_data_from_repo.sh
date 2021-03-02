@@ -1,7 +1,7 @@
 #!/bin/bash
 
-data_dir="data/"
-if [ -d $data_dir ]; then
+data_dir=$1
+if [ -d "$data_dir" ]; then
   echo "Data directory $data_dir already exists."
 else
   echo "Create data directory $data_dir."
