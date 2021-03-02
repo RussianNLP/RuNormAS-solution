@@ -98,6 +98,8 @@ class DataReader(object):
                 file_list.write(f"{res_fn}\n")
 
                 final_file_text = "\n".join(file_texts)
+                if self.tokenizer_name == "sberbank-ai/rugpt3xl":
+                     final_file_text += "<|endoftext|>"
                 with open(res_fn, "w", encoding='utf-8') as file_out:
                     file_out.write(final_file_text)
                 self.texts_for_model.append(final_file_text)
