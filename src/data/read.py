@@ -1,8 +1,10 @@
-from tqdm import tqdm
-import os
-from src.utils import get_all_files_from_dir
-from transformers import GPT2Tokenizer
 import argparse
+import os
+
+from tqdm import tqdm
+from transformers import GPT2Tokenizer
+
+from src.utils import get_all_files_from_dir
 
 
 class DataReader(object):
@@ -23,6 +25,7 @@ class DataReader(object):
         self.texts = {}
         self.anns = {}
         self.norms = {}
+        self.lm_prefixes = {}
         self.tokenizer_name = tokenizer_name
         self.tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_name)
         self.tokenizer.add_special_tokens({"bos_token": "<s>"})
@@ -63,46 +66,51 @@ class DataReader(object):
                         norm = file_obj.read().strip().split('\n')
                     self.norms[name] = norm
 
-    def _make_raw_data(self):
-        with open(os.path.join(self.output_dir, self.file_list_name), "w") as file_list:
-            for name in tqdm(self.texts, total=len(self.texts), leave=False, desc="Making raw files..."):
-                text = self.texts[name]
-                if self.answer_sep in text:
-                    print("answer_sep in file", fn)
-                ann = self.anns[name]
+    def _make_raw_data(self, is_save=True):
+        file_list = None
+        if is_save:
+            file_list = open(os.path.join(self.output_dir, self.file_list_name), "w")
+        for name in tqdm(self.texts, total=len(self.texts), leave=False, desc="Making raw files..."):
+            text = self.texts[name]
+            if self.answer_sep in text:
+                print("answer_sep in file", name)
+            ann = self.anns[name]
+            if self.part == self.train_part_name:
+                norm = self.norms[name]
+                if len(norm) != len(ann):
+                    raise ValueError(f"Lens of norm and ann should be same. Error with file name {name}")
+            else:
+                norm = ["0"] * len(ann)
+            file_texts = []
+            for line_ann, line_norm in zip(ann, norm):
+                start, stop = list(map(int, line_ann.strip().split()))
+                line_norm = line_norm.strip()
                 if self.part == self.train_part_name:
-                    norm = self.norms[name]
-                    if len(norm) != len(ann):
-                        raise ValueError(f"Lens of norm and ann should be same. Error with file name {fn}")
+                    final_text = "{bos}{text}{answ_sep}{ln}{eos}"
                 else:
-                    norm = ["0"] * len(ann)
-                file_texts = []
-                for line_ann, line_norm in zip(ann, norm):
-                    start, stop = list(map(int, line_ann.strip().split()))
-                    line_norm = line_norm.strip()
-                    if self.part == self.train_part_name:
-                        final_text = "{bos}{text}{answ_sep}{ln}{eos}"
-                    else:
-                        final_text = "{bos}{text}{answ_sep}"
-                    final_text = final_text.format(
-                            bos=self.tokenizer.bos_token,
-                            text=text[:stop],
-                            answ_sep=self.answer_sep,
-                            ln=line_norm,
-                            eos=self.tokenizer.eos_token,
-                        )
-                    file_texts.append(final_text)
+                    final_text = "{bos}{text}{answ_sep}"
+                final_text = final_text.format(
+                    bos=self.tokenizer.bos_token,
+                    text=text[:stop],
+                    answ_sep=self.answer_sep,
+                    ln=line_norm,
+                    eos=self.tokenizer.eos_token,
+                )
+                file_texts.append(final_text)
+            self.lm_prefixes[name] = file_texts
 
-                res_fn = os.path.join(self.output_dir, self.files_dir_name, f"{name}.txt")
-                res_fn = os.path.abspath(res_fn)
+            res_fn = os.path.join(self.output_dir, self.files_dir_name, f"{name}.txt")
+            res_fn = os.path.abspath(res_fn)
+            final_file_text = "\n".join(file_texts)
+            if is_save:
                 file_list.write(f"{res_fn}\n")
-
-                final_file_text = "\n".join(file_texts)
                 if self.tokenizer_name == "sberbank-ai/rugpt3xl":
-                     final_file_text += "<|endoftext|>"
+                    final_file_text += "<|endoftext|>"
                 with open(res_fn, "w", encoding='utf-8') as file_out:
                     file_out.write(final_file_text)
-                self.texts_for_model.append(final_file_text)
+            self.texts_for_model.append(final_file_text)
+        if is_save:
+            file_list.close()
 
 
 def add_data_reader_arguments(parser):
