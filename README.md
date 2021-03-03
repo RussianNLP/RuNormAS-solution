@@ -12,7 +12,7 @@ Read data and make files for LM.
 Split data on train and valid.
 
 ```bash
-python src/data/split_data.py
+python modules/data/split_data.py
 ```
 
 ### Run training

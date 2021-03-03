@@ -4,7 +4,7 @@ import os
 from tqdm import tqdm
 from transformers import GPT2Tokenizer
 
-from src.utils import get_all_files_from_dir
+from modules.utils import get_all_files_from_dir
 
 
 class DataReader(object):
