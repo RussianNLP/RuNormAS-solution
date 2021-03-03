@@ -40,9 +40,9 @@ class DataReader(object):
     def __call__(self):
         self.prc()
 
-    def prc(self):
+    def prc(self, is_save=True):
         self._read_files()
-        self._make_raw_data()
+        self._make_raw_data(is_save=is_save)
 
     def _read_files(self):
         for data_part in self.data_parts:
