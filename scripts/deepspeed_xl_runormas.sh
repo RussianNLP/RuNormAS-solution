@@ -3,11 +3,11 @@
 NUM_GPUS_PER_WORKER=10
 
 gpt_options=" \
-       --train-data-path /home/jovyan/runormas/data/train_new_raw/files.list \
+       --train-data-path /home/jovyan/runormas/data/train_new_raw/files_train.list \
        --max-files-per-process 20000 \
-       --logging-dir=/home/jovyan/runormas/models/xl/runs_v1/ \
+       --logging-dir=/home/jovyan/runormas/models/xl/runs_v3/ \
        --load /home/jovyan/devices/xl/340000/ \
-       --save /home/jovyan/runormas/models/xl/v1/ \
+       --save /home/jovyan/runormas/models/xl/v3/ \
        --tokenizer-path /home/jovyan/devices/dgpt_transformers/gpt3_serving/xl_serving/gpt3_xl \
        --cache-prefix p2 \
        --save-interval 5000 \
@@ -21,7 +21,7 @@ gpt_options=" \
        --batch-size 2 \
        --seq-length 2048 \
        --max-position-embeddings 2048 \
-       --train-iters 200000 \
+       --train-iters 20000 \
        --distributed-backend nccl \
        --lr 0.000015 \
        --warmup 0.0 \

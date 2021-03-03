@@ -4,6 +4,30 @@
 ```
 
 ### Process data for LM
+Read data and make files for LM.
 ```bash
 /bin/bash ./scripts/process_data_from_repo.sh
+```
+
+Split data on train and valid.
+
+```bash
+python src/data/split_data.py
+```
+
+### Run training
+Instructions for christophari.
+#### Install env
+
+```bash
+sh scripts/install_env_for_gpt.sh
+```
+
+#### Run finetuning
+Finetune RuGPT3XL.
+
+Cd to devices/xl/dgpt_transformers/deepspeed_megatron and run
+
+```bash
+sh scripts/finetune/deepspeed_xl_runormas.sh
 ```
