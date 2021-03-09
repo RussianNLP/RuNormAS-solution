@@ -8,7 +8,7 @@ part="test"
 
 run () {
   local idx="$1"
-  python predict.py --num_proc="$idx" \
+  CUDA_VISIBLE_DEVICES="$idx" python predict.py --num_proc="$idx" \
     --master_port="600$idx" \
     --weights_path="$weights_path" \
     --path="$path" \
