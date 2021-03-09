@@ -130,7 +130,10 @@ if __name__ == "__main__":
     args_dict["data_parts"] = args_dict["data_parts"].split(",")
     print("Load data for predict...")
     reader = DataReader(**args_dict)
-    reader.prc(is_save=True)
+    if args.num_proc == 0:
+        reader.prc(is_save=True)
+    else:
+        reader.prc(is_save=False)
 
     print("Load model...")
     model = get_model(args)
