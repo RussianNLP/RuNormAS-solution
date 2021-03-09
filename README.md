@@ -26,8 +26,10 @@ sh scripts/install_env_for_gpt.sh
 #### Run finetuning
 Finetune RuGPT3XL.
 
-Cd to devices/xl/dgpt_transformers/deepspeed_megatron and run
-
 ```bash
-sh scripts/finetune/deepspeed_xl_runormas.sh
+cd ../
+git clone ru-gpts
+cp scripts/deepspeed_xl_runormas.sh ru-gpts/scripts/
+cd ru-gpts/scripts
+sh deepspeed_xl_runormas.sh
 ```
