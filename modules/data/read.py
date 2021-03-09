@@ -17,10 +17,13 @@ class DataReader(object):
             part="train",
             train_part_name="train",
             data_parts=frozenset(["generic", "named"]),
-            answer_sep=" A: "
+            answer_sep=" A: ",
+            start_sep="",
+            **kwargs
     ):
         self.part = part
         self.path = path
+        self.start_sep = start_sep
         self.train_part_name = train_part_name
         self.data_parts = data_parts
         self.texts = defaultdict(dict)
@@ -31,6 +34,8 @@ class DataReader(object):
         self.tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_name)
         self.tokenizer.add_special_tokens({"bos_token": "<s>"})
         self.tokenizer.add_special_tokens({"eos_token": "</s>"})
+        if len(start_sep):
+            self.tokenizer.add_special_tokens({"start_sep": start_sep})
         self.answer_sep = answer_sep
         self.output_dir = output_dir
         self.file_list_name = "files.list"
@@ -95,7 +100,7 @@ class DataReader(object):
                         final_text = "{bos}{text}{answ_sep}"
                     final_text = final_text.format(
                         bos=self.tokenizer.bos_token,
-                        text=text[:stop],
+                        text=text[:start] + self.start_sep + text[start:stop],
                         answ_sep=self.answer_sep,
                         ln=line_norm,
                         eos=self.tokenizer.eos_token,
@@ -158,6 +163,12 @@ def add_data_reader_arguments(parser):
         type=str,
         default=" A: ",
         help='separator between query and answer.'
+    )
+    group.add_argument(
+        '--start_sep',
+        type=str,
+        default="",
+        help='separator for mark start of norm.'
     )
     return parser
 
