@@ -121,6 +121,8 @@ def predict(reader, model, path, total_processes, num_proc):
 if __name__ == "__main__":
     arg_parser = argparse.ArgumentParser(description="Predict on test set")
     arg_parser = add_data_reader_arguments(arg_parser)
+    arg_parser = add_prediction_arguments(arg_parser)
+
     args = arg_parser.parse_args()
     print(f"Run {args.num_proc} proc")
     if args.total_processes is None:
