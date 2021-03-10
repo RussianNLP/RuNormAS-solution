@@ -30,3 +30,10 @@ Finetune RuGPT3XL.
 cd scripts
 sh deepspeed_xl_runormas.sh
 ```
+
+### Run prediction
+```bash
+cd scripts
+sh xl_runormas_pred_distributed_v5.sh
+```
+
