@@ -27,9 +27,6 @@ sh scripts/install_env_for_gpt.sh
 Finetune RuGPT3XL.
 
 ```bash
-cd ../
-git clone ru-gpts
-cp scripts/deepspeed_xl_runormas.sh ru-gpts/scripts/
-cd ru-gpts/scripts
+cd scripts
 sh deepspeed_xl_runormas.sh
 ```

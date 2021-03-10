@@ -19,6 +19,9 @@ class DataReader(object):
             data_parts=frozenset(["generic", "named"]),
             answer_sep=" A: ",
             start_sep="",
+            local_rank=0,
+            word_size=1,
+            add_answer_sep=False,
             **kwargs
     ):
         self.part = part
@@ -36,12 +39,17 @@ class DataReader(object):
         self.tokenizer.add_special_tokens({"eos_token": "</s>"})
         if len(start_sep):
             self.tokenizer.add_special_tokens({"start_sep": start_sep})
+        if add_answer_sep:
+            self.tokenizer.add_special_tokens({"answer_sep": answer_sep})
         self.answer_sep = answer_sep
         self.output_dir = output_dir
         self.file_list_name = "files.list"
         self.files_dir_name = "files"
         os.makedirs(os.path.join(self.output_dir, self.files_dir_name), exist_ok=True)
         self.texts_for_model = []
+
+        self.local_rank = local_rank
+        self.word_size = word_size
 
     def __call__(self):
         self.prc()
@@ -53,9 +61,13 @@ class DataReader(object):
     def _read_files(self):
         for data_part in self.data_parts:
             all_files = get_all_files_from_dir(os.path.join(self.path, data_part))
+            shard_size = len(all_files) // self.word_size
+            shard_start = self.local_rank * shard_size
+            shard_end = (self.local_rank + 1) * shard_size
+            all_files = all_files[shard_start:shard_end]
             for fn in tqdm(
-                    all_files, total=len(all_files), leave=False,
-                    desc=f"Parsing files from {self.part} part..."
+                    all_files, total=len(all_files), leave=True,
+                    desc=f"Parsing files from {self.part} part on {self.local_rank}..."
             ):
                 name = os.path.basename(fn)
                 name, ext = os.path.splitext(name)
@@ -79,7 +91,7 @@ class DataReader(object):
         for data_part in self.data_parts:
             for name in tqdm(
                     self.texts[data_part], total=len(self.texts[data_part]),
-                    leave=False, desc="Making raw files..."):
+                    leave=True, desc="Making raw files..."):
                 text = self.texts[data_part][name]
                 if self.answer_sep in text:
                     print("answer_sep in file", name)
@@ -161,14 +173,25 @@ def add_data_reader_arguments(parser):
     group.add_argument(
         '--answer_sep',
         type=str,
-        default=" A: ",
+        default="<answer>",
         help='separator between query and answer.'
+    )
+    group.add_argument(
+        '--add_answer_sep',
+        action='store_true',
+        help='if add answer_sep to tokenizer'
     )
     group.add_argument(
         '--start_sep',
         type=str,
-        default="",
+        default="<start>",
         help='separator for mark start of norm.'
+    )
+    group.add_argument(
+        '--save_preds_path',
+        type=str,
+        default="../test_pred/",
+        help='path for store predictions'
     )
     return parser
 

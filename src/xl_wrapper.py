@@ -153,7 +153,7 @@ class ModelOutput(object):
 
 
 class RuGPT3XL(PreTrainedModel):
-    def __init__(self, model, tokenizer, model_path, seq_len=512, min_generated_len=20):
+    def __init__(self, model, tokenizer, model_path, seq_len=512, min_generated_len=32):
         super().__init__(PretrainedConfig())
         self.model = model
         self.pad_token_id = tokenizer.encoder['<pad>']
@@ -273,13 +273,15 @@ class RuGPT3XL(PreTrainedModel):
             context_length = len(context_tokens)
             original_context_length = len(context_tokens)
             
-            while context_length > seq_len:
+            while context_length > seq_len != 2048:
                 seq_len += 16
             if context_length < seq_len < 2048:
-                context_tokens.extend([self.pad_token_id] * (seq_len - context_length))
+                context_tokens.extend([self.pad_token_id] * seq_len)
+                context_tokens = context_tokens[:seq_len]
                 if labels is not None:
                     lbl = lbl.tolist()
-                    lbl.extend([self.pad_token_id] * (seq_len - context_length))
+                    lbl.extend([self.pad_token_id] * seq_len)
+                    lbl = lbl[:seq_len]
                     lbl = torch.cuda.LongTensor(lbl)
             if context_length >= 2048:
                 context_tokens = context_tokens[-(2048 - self.min_generated_len):]

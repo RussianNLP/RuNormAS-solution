@@ -19,6 +19,7 @@ import argparse
 import os
 import torch
 from src.utils import DEEPSPEED_WRAP
+from modules.data.read import DataReader, add_data_reader_arguments
 
 
 def add_model_config_args(parser):
@@ -325,6 +326,7 @@ def get_args(cmd=None):
     parser = add_evaluation_args(parser)
     parser = add_text_generate_args(parser)
     parser = add_data_args(parser)
+    parser = add_data_reader_arguments(parser)
 
     # Include DeepSpeed configuration arguments
     if DEEPSPEED_WRAP:
