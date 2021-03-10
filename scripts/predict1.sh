@@ -1,11 +1,10 @@
 #! /bin/bash
 
-total_processes=16
+total_processes=1
 weights_path="/home/jovyan/runormas/models/xl/v5/20000/mp_rank_00_model_states.pt"
 path="../data/public_test"
 output_dir="../data/public_test_raw"
 part="test"
-save_preds_path="../test_pred/16"
 
 run () {
   local idx="$1"

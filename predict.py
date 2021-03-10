@@ -10,7 +10,7 @@ def filter_results(nr):
     return [x[:x.find("<|endoftext|>")][:x.find("</s>")] for x in nr]
 
 
-def generate(model, text, additional_len=20):
+def generate(model, text, additional_len=32):
     min_len = min(len(model.tokenizer.encode(text)), 2048 - additional_len)
     return filter_results(model.generate(
         text=text,
@@ -30,7 +30,9 @@ def get_model(args):
         weights_path=args.weights_path,
         deepspeed_config_path=args.deepspeed_config_path,
         seq_len=512,
-        master_port=args.master_port
+        master_port=args.master_port,
+        rank=args.num_proc,
+        # world_size=args.total_processes
     )
     gpt.tokenizer.add_special_tokens({"bos_token": "<s>"})
     gpt.tokenizer.add_special_tokens({"eos_token": "</s>"})
@@ -77,7 +79,7 @@ def add_prediction_arguments(parser):
         help='count of total used gpus'
     )
     group.add_argument(
-        '--num_proc',
+        '--local_rank',
         type=int,
         default=0,
         help='number of current process'
@@ -100,12 +102,12 @@ def predict(reader, model, path, total_processes, num_proc):
         shard_end = (num_proc + 1) * shard_size
         names = names[shard_start:shard_end]
 
-        for name in tqdm(names, total=len(names), leave=False, desc="Predict"):
+        for name in tqdm(names, total=len(names), leave=True, desc=f"Predict on {num_proc}"):
             with open(os.path.join(store_dir, f"{name}.norm"), 'w', encoding='utf-8') as file:
                 for lm_prefix, ann in tqdm(
-                        zip(reader.lm_prefixes[data_part][name][:5], reader.anns[data_part][name]),
+                        zip(reader.lm_prefixes[data_part][name], reader.anns[data_part][name]),
                         total=len((reader.lm_prefixes[data_part][name])),
-                        leave=False
+                        leave=True
                 ):
                     gen_res = generate(model, lm_prefix)
                     gen_res = gen_res.split(reader.answer_sep)
@@ -124,20 +126,21 @@ if __name__ == "__main__":
     arg_parser = add_prediction_arguments(arg_parser)
 
     args = arg_parser.parse_args()
+    args.num_proc = args.local_rank
     print(f"Run {args.num_proc} proc")
     if args.total_processes is None:
         print("Note total processes is None. Suppose, that running on all gpus...")
         args.total_processes = torch.cuda.device_count()
     args_dict = vars(args)
     args_dict["data_parts"] = args_dict["data_parts"].split(",")
-    print("Load data for predict...")
+    print(f"Load data for predict on {args.num_proc} proc...")
     reader = DataReader(**args_dict)
     if args.num_proc == 0:
         reader.prc(is_save=True)
     else:
         reader.prc(is_save=False)
 
-    print("Load model...")
+    print(f"Load model {args.num_proc}...")
     model = get_model(args)
 
     print(f"Start prediction on {args.num_proc} proc...")
