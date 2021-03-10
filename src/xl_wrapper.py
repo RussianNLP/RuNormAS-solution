@@ -157,7 +157,7 @@ class RuGPT3XL(PreTrainedModel):
         super().__init__(PretrainedConfig())
         self.model = model
         self.pad_token_id = tokenizer.encoder['<pad>']
-        self.eos_token_id = tokenizer.encoder['<|endoftext|>']
+        self.eos_token_id = tokenizer.encoder['</s>']
         self.seq_len = seq_len
         self.model_path = model_path
         self.tokenizer = tokenizer
@@ -227,6 +227,9 @@ class RuGPT3XL(PreTrainedModel):
             eos_token_id = self.eos_token_id
         if pad_token_id is None:
             pad_token_id = self.pad_token_id
+        if input_ids.shape[-1] > 2048:
+            input_ids = input_ids[:, -2048 + self.min_generated_len:]
+        # print(input_ids.shape, max_length, mpu.get_data_parallel_rank())
         res = super().generate(
             input_ids=input_ids,
             max_length=max_length,
@@ -270,24 +273,20 @@ class RuGPT3XL(PreTrainedModel):
         seq_len = self.seq_len
         for tokens, lbl in zip(input_ids, lbls):
             context_tokens = tokens.tolist()
-            context_length = len(context_tokens)
             original_context_length = len(context_tokens)
+            if labels is not None:
+                lbl = lbl.tolist()
+            assert original_context_length
             
-            while context_length > seq_len != 2048:
-                seq_len += 16
-            if context_length < seq_len < 2048:
-                context_tokens.extend([self.pad_token_id] * seq_len)
-                context_tokens = context_tokens[:seq_len]
+            while len(context_tokens) % 16:
+                context_tokens.append(self.pad_token_id)
                 if labels is not None:
-                    lbl = lbl.tolist()
-                    lbl.extend([self.pad_token_id] * seq_len)
-                    lbl = lbl[:seq_len]
-                    lbl = torch.cuda.LongTensor(lbl)
-            if context_length >= 2048:
-                context_tokens = context_tokens[-(2048 - self.min_generated_len):]
-                if labels is not None:
-                    lbl = lbl.tolist()[-(2048 - self.min_generated_len):]
-                    lbl = torch.cuda.LongTensor(lbl)
+                    lbl.append(self.pad_token_id)
+            context_tokens = context_tokens[-2048:]
+            context_length = len(context_tokens)
+            if labels is not None:
+                lbl = lbl[-2048:]
+                lbl = torch.cuda.LongTensor(lbl)
             context_tokens_tensor = torch.cuda.LongTensor(context_tokens)
             context_length_tensor = torch.cuda.LongTensor([context_length])
 
@@ -297,6 +296,7 @@ class RuGPT3XL(PreTrainedModel):
                                         group=mpu.get_model_parallel_group())
 
             # context_length = context_length_tensor[0].item()
+            # print(context_tokens_tensor.shape, original_context_length, seq_len, mpu.get_data_parallel_rank())
 
             tokens = context_tokens_tensor
             tokens = tokens.view(1, -1).contiguous()
@@ -316,4 +316,5 @@ class RuGPT3XL(PreTrainedModel):
         logits = torch.cat([x[0] for x in res], dim=0)[:, : original_context_length, :]
         if loss is not None:
             loss = [x[1] for x in res]
+        # print(logits.shape, mpu.get_data_parallel_rank(), "------------")
         return ModelOutput(logits, loss)

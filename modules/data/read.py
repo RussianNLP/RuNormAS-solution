@@ -21,7 +21,7 @@ class DataReader(object):
             start_sep="",
             local_rank=0,
             word_size=1,
-            add_answer_sep=False,
+            add_start_sep=False,
             **kwargs
     ):
         self.part = part
@@ -37,10 +37,9 @@ class DataReader(object):
         self.tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_name)
         self.tokenizer.add_special_tokens({"bos_token": "<s>"})
         self.tokenizer.add_special_tokens({"eos_token": "</s>"})
-        if len(start_sep):
-            self.tokenizer.add_special_tokens({"start_sep": start_sep})
-        if add_answer_sep:
-            self.tokenizer.add_special_tokens({"answer_sep": answer_sep})
+        # self.tokenizer.add_special_tokens({"answ_sep": answ_sep})
+        if add_start_sep:
+            self.tokenizer.add_tokens(start_sep)
         self.answer_sep = answer_sep
         self.output_dir = output_dir
         self.file_list_name = "files.list"
@@ -60,7 +59,7 @@ class DataReader(object):
 
     def _read_files(self):
         for data_part in self.data_parts:
-            all_files = get_all_files_from_dir(os.path.join(self.path, data_part))
+            all_files = [x for x in get_all_files_from_dir(os.path.join(self.path, data_part)) if x.endswith(".txt")]
             shard_size = len(all_files) // self.word_size
             shard_start = self.local_rank * shard_size
             shard_end = (self.local_rank + 1) * shard_size
@@ -71,16 +70,16 @@ class DataReader(object):
             ):
                 name = os.path.basename(fn)
                 name, ext = os.path.splitext(name)
-                if ext == ".txt":
-                    with open(fn, encoding='utf-8') as file_obj:
-                        text = file_obj.read()
-                    self.texts[data_part][name] = text
-                elif ext == ".ann":
-                    with open(fn, encoding='utf-8') as file_obj:
-                        ann = file_obj.read().strip().split('\n')
-                    self.anns[data_part][name] = ann
-                elif ext == ".norm":
-                    with open(fn, encoding='utf-8') as file_obj:
+
+                with open(fn, encoding='utf-8') as file_obj:
+                    text = file_obj.read()
+                self.texts[data_part][name] = text
+
+                with open(fn[:-4] + ".ann", encoding='utf-8') as file_obj:
+                    ann = file_obj.read().strip().split('\n')
+                self.anns[data_part][name] = ann
+                if self.part == self.train_part_name:
+                    with open(fn[:-4] + ".norm", encoding='utf-8') as file_obj:
                         norm = file_obj.read().strip().split('\n')
                     self.norms[data_part][name] = norm
 
@@ -173,11 +172,11 @@ def add_data_reader_arguments(parser):
     group.add_argument(
         '--answer_sep',
         type=str,
-        default="<answer>",
+        default=" A: ",
         help='separator between query and answer.'
     )
     group.add_argument(
-        '--add_answer_sep',
+        '--add_start_sep',
         action='store_true',
         help='if add answer_sep to tokenizer'
     )

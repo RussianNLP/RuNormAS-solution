@@ -36,7 +36,7 @@ from src.utils import (
     get_sparse_attention_config, DEEPSPEED_WRAP
 )
 from src.xl_wrapper import RuGPT3XL
-from .pretrain_gpt3 import initialize_distributed, set_random_seed
+from pretrain_gpt3 import initialize_distributed, set_random_seed
 
 # Flag to use Pytorch ddp which uses overlapping communication and computation.
 USE_TORCH_DDP = False
@@ -201,6 +201,9 @@ def setup_model_and_optimizer(args):
 def get_reader(args):
     """Load the data on rank zero and boradcast number of tokens to all GPUS."""
     reader = None
+    args.do_train = 0
+    args.do_valid = 0
+    args.do_test = 0
 
     # Data loader only on rank 0 of each model parallel group.
     if mpu.get_model_parallel_rank() == 0:
@@ -209,7 +212,9 @@ def get_reader(args):
         # global_batch_size = args.batch_size * world_size
 
         args.data_parts = args.data_parts.split(",")
-        reader = DataReader(**vars(args), local_rank=rank, word_size=world_size)
+        args.local_rank = rank
+
+        reader = DataReader(**vars(args), word_size=world_size)
         reader.prc(is_save=False)
 
         tokenizer_path = args.tokenizer_path
@@ -250,13 +255,14 @@ def filter_results(nr):
 
 def generate(model, text, additional_len=32):
     min_len = min(len(model.tokenizer.encode(text)), 2048 - additional_len)
-    return filter_results(model.generate(
-        text=text,
-        max_length=min_len + additional_len,
-        num_beams=10,
-        eos_token_id=model.tokenizer.eos_token_id,
-        num_return_sequences=1,
-    ))[0]
+    with torch.no_grad():
+        return filter_results(model.generate(
+            text=text,
+            max_length=min_len + additional_len,
+            num_beams=10,
+            eos_token_id=model.tokenizer.eos_token_id,
+            num_return_sequences=1,
+        ))[0]
 
 
 def predict(reader, model, path, num_proc):
