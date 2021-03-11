@@ -73,6 +73,13 @@ def make_gpt3_dataloaders(args):
                                                                       '_tokenizer/'))
     print_rank_0('Load tokenizer from ' + tokenizer_path)
     tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_path)
+    tokenizer.add_special_tokens({"bos_token": "<s>"})
+    tokenizer.add_special_tokens({"eos_token": "</s>"})
+    print("Add answer_sep:", args.answer_sep)
+    tokenizer.add_tokens(args.answer_sep)
+    if args.add_start_sep:
+        print("Add start_sep:", args.start_sep)
+        tokenizer.add_tokens(args.start_sep)
     eod_token = tokenizer.encoder['<pad>']
     num_tokens = len(tokenizer)
 

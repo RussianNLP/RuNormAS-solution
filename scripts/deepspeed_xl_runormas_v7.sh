@@ -5,11 +5,12 @@ NUM_GPUS_PER_WORKER=8
 gpt_options=" \
        --train-data-path /home/jovyan/runormas/data/train_new_v6/files.list \
        --max-files-per-process 20000 \
-       --logging-dir=/home/jovyan/runormas/models/xl/runs_v6/ \
+       --logging-dir=/home/jovyan/runormas/models/xl/runs_v7/ \
        --load-huggingface sberbank-ai/rugpt3xl \
-       --save /home/jovyan/runormas/models/xl/v6/ \
+       --add_start_sep \
+       --save /home/jovyan/runormas/models/xl/v7/ \
        --tokenizer-path sberbank-ai/rugpt3xl \
-       --cache-prefix p6 \
+       --cache-prefix p7 \
        --save-interval 500 \
        --no-load-optim \
        --finetune \

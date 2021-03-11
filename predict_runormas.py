@@ -281,7 +281,10 @@ def predict(reader, model, path, num_proc):
                         total=len((reader.lm_prefixes[data_part][name])),
                         leave=True
                 ):
-                    gen_res = generate(model, lm_prefix)
+                    try:
+                        gen_res = generate(model, lm_prefix)
+                    except:
+                        gen_res = ""
                     gen_res = gen_res.split(reader.answer_sep)
                     if len(gen_res) == 1:
                         text = reader.texts[data_part][name]

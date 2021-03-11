@@ -37,8 +37,10 @@ class DataReader(object):
         self.tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_name)
         self.tokenizer.add_special_tokens({"bos_token": "<s>"})
         self.tokenizer.add_special_tokens({"eos_token": "</s>"})
-        # self.tokenizer.add_special_tokens({"answ_sep": answ_sep})
+        print("Add answer_sep:", answer_sep)
+        self.tokenizer.add_tokens(answer_sep)
         if add_start_sep:
+            print("Add start_sep", start_sep)
             self.tokenizer.add_tokens(start_sep)
         self.answer_sep = answer_sep
         self.output_dir = output_dir
@@ -79,7 +81,11 @@ class DataReader(object):
                     ann = file_obj.read().strip().split('\n')
                 self.anns[data_part][name] = ann
                 if self.part == self.train_part_name:
-                    with open(fn[:-4] + ".norm", encoding='utf-8') as file_obj:
+                    path = fn
+                    p1, p2 = os.path.split(path)
+
+                    path = os.path.join(p1.replace("texts_and_ann", ""), "norm", p2)
+                    with open(path[:-4] + ".norm", encoding='utf-8') as file_obj:
                         norm = file_obj.read().strip().split('\n')
                     self.norms[data_part][name] = norm
 
@@ -172,7 +178,7 @@ def add_data_reader_arguments(parser):
     group.add_argument(
         '--answer_sep',
         type=str,
-        default=" A: ",
+        default="<answer>",
         help='separator between query and answer.'
     )
     group.add_argument(
