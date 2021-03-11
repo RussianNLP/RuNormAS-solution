@@ -253,19 +253,20 @@ def filter_results(nr):
     return [x[:x.find("<|endoftext|>")][:x.find("</s>")] for x in nr]
 
 
-def generate(model, text, additional_len=32):
+def generate(model, text, additional_len=32, num_beams=10, do_sample=None):
     min_len = min(len(model.tokenizer.encode(text)), 2048 - additional_len)
     with torch.no_grad():
         return filter_results(model.generate(
             text=text,
             max_length=min_len + additional_len,
-            num_beams=10,
+            num_beams=num_beams,
+            do_sample=do_sample,
             eos_token_id=model.tokenizer.eos_token_id,
             num_return_sequences=1,
         ))[0]
 
 
-def predict(reader, model, path, num_proc):
+def predict(reader, model, path, num_proc, num_beams=10, do_sample=None):
     if not os.path.exists(path):
         os.makedirs(path, exist_ok=True)
     for data_part in reader.lm_prefixes:
@@ -282,7 +283,11 @@ def predict(reader, model, path, num_proc):
                         leave=True
                 ):
                     try:
-                        gen_res = generate(model, lm_prefix)
+                        gen_res = generate(
+                            model, lm_prefix,
+                            num_beams=num_beams,
+                            do_sample=do_sample
+                        )
                     except:
                         gen_res = ""
                     gen_res = gen_res.split(reader.answer_sep)
