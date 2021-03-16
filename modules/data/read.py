@@ -198,6 +198,18 @@ def add_data_reader_arguments(parser):
         default="../test_pred/",
         help='path for store predictions'
     )
+    group.add_argument(
+        '--do_sample',
+        type=int,
+        default=None,
+        help='do sample while generation'
+    )
+    group.add_argument(
+        '--num_beams',
+        type=int,
+        default=None,
+        help='number of beams while generation'
+    )
     return parser
 
 

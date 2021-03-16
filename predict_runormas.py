@@ -275,7 +275,7 @@ def predict(reader, model, path, num_proc, num_beams=10, do_sample=None):
             os.makedirs(store_dir, exist_ok=True)
         names = list(reader.lm_prefixes[data_part].keys())
 
-        for name in tqdm(names, total=len(names), leave=True, desc=f"Predict on {num_proc}"):
+        for name in tqdm(names, total=len(names), leave=True, desc=f"Predict on {num_proc}\n"):
             with open(os.path.join(store_dir, f"{name}.norm"), 'w', encoding='utf-8') as file:
                 for lm_prefix, ann in tqdm(
                         zip(reader.lm_prefixes[data_part][name], reader.anns[data_part][name]),
@@ -288,6 +288,9 @@ def predict(reader, model, path, num_proc, num_beams=10, do_sample=None):
                             num_beams=num_beams,
                             do_sample=do_sample
                         )
+                    except KeyboardInterrupt:
+                        print("Exited")
+                        exit()
                     except:
                         gen_res = ""
                     gen_res = gen_res.split(reader.answer_sep)
@@ -329,7 +332,7 @@ def main():
 
     model = RuGPT3XL(model_in, tokenizer, args.load, seq_len=512, min_generated_len=32)
 
-    predict(reader, model, args.save_preds_path, mpu.get_data_parallel_rank())
+    predict(reader, model, args.save_preds_path, mpu.get_data_parallel_rank(), num_beams=args.num_beams, do_sample=bool(args.do_sample))
 
 
 if __name__ == "__main__":

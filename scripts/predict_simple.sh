@@ -8,5 +8,5 @@ USE_DEEPSPEED=1 python ../predict_simple.py \
   --path=../../data/public_test \
   --output_dir=../../data/public_test_raw \
   --part=test \
-  --tokenizer-path sberbank-ai/rugpt3xl \
+  --tokenizer_name sberbank-ai/rugpt3xl \
   --add_start_sep

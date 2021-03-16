@@ -29,19 +29,6 @@ def add_prediction_arguments(parser):
         default="",
         help='path to deepspeed config'
     )
-    group.add_argument(
-        '--do_sample',
-        type=int,
-        default=None,
-        help='do sample while generation'
-    )
-    group.add_argument(
-        '--num_beams',
-        type=int,
-        default=None,
-        help='number of beams while generation'
-    )
-
     return parser
 
 
@@ -55,7 +42,7 @@ def main():
     reader = DataReader(**vars(args))
     reader.prc(is_save=False)
     model = get_model(reader, args)
-    predict(reader, model, args.save_preds_path, 0, num_beams=10, do_sample=None)
+    predict(reader, model, args.save_preds_path, 0, num_beams=args.num_beams, do_sample=bool(args.do_sample))
 
 
 if __name__ == "__main__":
