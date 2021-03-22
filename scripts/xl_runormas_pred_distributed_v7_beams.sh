@@ -9,7 +9,6 @@ gpt_options=" \
        --save_preds_path=../../test_pred/beams16 \
        --part=test \
        --num_beams 5 \
-       --add_start_sep \
        --logging-dir=../../models/xl/runs_v7/ \
        --load ../../models/xl/v7/ \
        --tokenizer-path sberbank-ai/rugpt3xl \

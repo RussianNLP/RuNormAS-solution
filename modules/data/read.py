@@ -17,16 +17,16 @@ class DataReader(object):
             part="train",
             train_part_name="train",
             data_parts=frozenset(["generic", "named"]),
-            answer_sep=" A: ",
-            start_sep="",
+            answer_sep="<answer>",
+            start_sep="<start>",
+            end_sep="<end>",
+            window_size=False,
             local_rank=0,
             word_size=1,
-            add_start_sep=False,
             **kwargs
     ):
         self.part = part
         self.path = path
-        self.start_sep = start_sep
         self.train_part_name = train_part_name
         self.data_parts = data_parts
         self.texts = defaultdict(dict)
@@ -37,12 +37,21 @@ class DataReader(object):
         self.tokenizer = GPT2Tokenizer.from_pretrained(tokenizer_name)
         self.tokenizer.add_special_tokens({"bos_token": "<s>"})
         self.tokenizer.add_special_tokens({"eos_token": "</s>"})
+
         print("Add answer_sep:", answer_sep)
         self.tokenizer.add_tokens(answer_sep)
-        if add_start_sep:
-            print("Add start_sep", start_sep)
-            self.tokenizer.add_tokens(start_sep)
         self.answer_sep = answer_sep
+
+        print("Add start_sep", start_sep)
+        self.start_sep = start_sep
+        self.tokenizer.add_tokens(start_sep)
+
+        print("Add start_sep", end_sep)
+        self.tokenizer.add_tokens(end_sep)
+        self.end_sep = end_sep
+
+        self.window_size = window_size
+
         self.output_dir = output_dir
         self.file_list_name = "files.list"
         self.files_dir_name = "files"
@@ -115,9 +124,19 @@ class DataReader(object):
                         final_text = "{bos}{text}{answ_sep}{ln}{eos}"
                     else:
                         final_text = "{bos}{text}{answ_sep}"
+                    if self.window_size:
+                        text = "{left}{start}{to_norm}{end}{right}".format(
+                            left=text[start - self.window_size:start],
+                            start=self.start_sep,
+                            to_norm=text[start:stop],
+                            end=self.end_sep,
+                            right=text[stop:stop + self.window_size]
+                        )
+                    else:
+                        text = text[:start] + self.start_sep + text[start:stop]
                     final_text = final_text.format(
                         bos=self.tokenizer.bos_token,
-                        text=text[:start] + self.start_sep + text[start:stop],
+                        text=text,
                         answ_sep=self.answer_sep,
                         ln=line_norm,
                         eos=self.tokenizer.eos_token,
@@ -182,15 +201,22 @@ def add_data_reader_arguments(parser):
         help='separator between query and answer.'
     )
     group.add_argument(
-        '--add_start_sep',
-        action='store_true',
-        help='if add answer_sep to tokenizer'
+        '--window_size',
+        type=int,
+        default=0,
+        help='Use only left context or left and right. If 0 use full left context.'
     )
     group.add_argument(
         '--start_sep',
         type=str,
         default="<start>",
         help='separator for mark start of norm.'
+    )
+    group.add_argument(
+        '--end_sep',
+        type=str,
+        default="<end>",
+        help='separator for mark end of norm.'
     )
     group.add_argument(
         '--save_preds_path',
