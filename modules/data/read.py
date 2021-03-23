@@ -20,7 +20,7 @@ class DataReader(object):
             answer_sep="<answer>",
             start_sep="<start>",
             end_sep="<end>",
-            window_size=False,
+            window_size=0,
             local_rank=0,
             word_size=1,
             **kwargs
@@ -125,18 +125,23 @@ class DataReader(object):
                     else:
                         final_text = "{bos}{text}{answ_sep}"
                     if self.window_size:
-                        text = "{left}{start}{to_norm}{end}{right}".format(
-                            left=text[start - self.window_size:start],
+                        # left = self.tokenizer.decode(self.tokenizer.encode(text[:start])[-self.window_size:]).strip()
+                        left = " ".join(text[:start].split()[-self.window_size:]).strip()
+                        # right = self.tokenizer.decode(self.tokenizer.encode(text[stop:])[:self.window_size]).strip()
+                        right = " ".join(text[stop:].split()[:self.window_size])
+                        new_text = "{left}{start}{to_norm}{end}{right}".format(
+                            left=left,
                             start=self.start_sep,
                             to_norm=text[start:stop],
                             end=self.end_sep,
-                            right=text[stop:stop + self.window_size]
+                            right=right
                         )
                     else:
-                        text = text[:start] + self.start_sep + text[start:stop]
+                        new_text = text[:start] + self.start_sep + text[start:stop]
+                    new_text = new_text.replace("\u2028", " ").strip()
                     final_text = final_text.format(
                         bos=self.tokenizer.bos_token,
-                        text=text,
+                        text=new_text,
                         answ_sep=self.answer_sep,
                         ln=line_norm,
                         eos=self.tokenizer.eos_token,

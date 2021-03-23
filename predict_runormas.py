@@ -291,15 +291,14 @@ def predict(reader, model, path, num_proc, num_beams=10, do_sample=None):
                     except KeyboardInterrupt:
                         print("Exited")
                         exit()
-                    except:
-                        gen_res = ""
+
                     gen_res = gen_res.split(reader.answer_sep)
                     if len(gen_res) == 1:
                         text = reader.texts[data_part][name]
                         start, stop = list(map(int, ann.split()))
                         gen_res = text[start:stop].strip()
                     else:
-                        gen_res = gen_res[1].strip()
+                        gen_res = gen_res[-1].strip()
                     file.write(f"{gen_res}\n")
 
 
