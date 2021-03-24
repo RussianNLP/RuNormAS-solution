@@ -20,7 +20,7 @@ gpt_options=" \
        --batch-size 1 \
        --seq-length 2048 \
        --max-position-embeddings 2048 \
-       --train-iters 30000 \
+       --train-iters 100000 \
        --distributed-backend nccl \
        --lr 0.000015 \
        --warmup 0.0 \
