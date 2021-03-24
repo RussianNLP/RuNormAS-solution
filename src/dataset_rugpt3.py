@@ -57,18 +57,25 @@ class RuGpt3TextDataset(Dataset):
             examples = []
             with open(os.path.join(file_path, filename), encoding="utf-8") as f:
                 text = f.read()
+            if self.args.line_by_line:
+                lines = [x + "</s>" for x in text.strip().split("</s>")]
+                for line in lines:
+                    line = tokenizer.encode(line)
+                    line += [tokenizer.encoder['<pad>']] * self.args.seq_length
+                    line = line[:self.args.seq_length]
+                    examples.append(line)
+            else:
+                tokenized_text = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(text))
 
-            tokenized_text = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(text))
+                max_shift = max(min(args.block_size, len(tokenized_text) - args.block_size), 0)
+                rnd_shift = random.randrange(max_shift) if max_shift and args.random_shift else 0
 
-            max_shift = max(min(args.block_size, len(tokenized_text) - args.block_size), 0)
-            rnd_shift = random.randrange(max_shift) if max_shift and args.random_shift else 0
-
-            for i in range(rnd_shift, len(tokenized_text) - args.block_size + 1, args.block_size):
-                example = tokenized_text[i:i + args.block_size]
-                if None in example:
-                    raise Exception('None in tokens!: ' + filename)
-                if len(example) == args.block_size:
-                    examples.append(example)
+                for i in range(rnd_shift, len(tokenized_text) - args.block_size + 1, args.block_size):
+                    example = tokenized_text[i:i + args.block_size]
+                    if None in example:
+                        raise Exception('None in tokens!: ' + filename)
+                    if len(example) == args.block_size:
+                        examples.append(example)
             # Note that we are loosing the last truncated example here for the sake of simplicity (no padding)
             # If your dataset is small, first you should loook for a bigger one :-) and second you
             # can change this behavior by adding (model specific) padding.
@@ -79,11 +86,12 @@ class RuGpt3TextDataset(Dataset):
 
         return examples
 
-    def __init__(self, tokenizer, args, rank, world_size, file_path, cache_prefix='_'):
+    def __init__(self, tokenizer, args, rank, world_size, file_path, cache_prefix='_', all_args=None):
         self.rank = rank
         self.world_size = world_size
         self.log(f"Loading dataset {file_path}")
         max_file_load = args.max_files_load
+        self.args = all_args
 
         file_with_list = file_path
         file_path = os.path.dirname(file_with_list)

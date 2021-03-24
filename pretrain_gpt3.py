@@ -296,10 +296,14 @@ def forward_step(sample, model, args, timers, tokenizer=None, iteration=None, tb
 
     # Forward model.
     output = model(tokens, position_ids, attention_mask)
-
-    labels = labels[:, 1:].contiguous()
-    output = output[:, :-1].contiguous()
-    loss_mask = loss_mask[:, :-1].contiguous()
+    if args.loss_only_norm and args.line_by_line:
+        labels = labels[:, 1:].contiguous()
+        output = output[:, :-1].contiguous()
+        loss_mask = loss_mask[:, :-1].contiguous()
+    else:
+        labels = labels[:, 1:].contiguous()
+        output = output[:, :-1].contiguous()
+        loss_mask = loss_mask[:, :-1].contiguous()
 
     losses = mpu.vocab_parallel_cross_entropy(output.contiguous().float(), labels)
 

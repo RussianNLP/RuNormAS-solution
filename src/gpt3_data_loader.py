@@ -104,6 +104,7 @@ def make_gpt3_dataloaders(args):
             world_size=world_size,
             file_path=data_path,
             # cache_prefix=args.cache_prefix
+            all_args=args
         )
         # Use a simple sampler with distributed batch sampler.
         sampler = torch.utils.data.SequentialSampler(dataset)

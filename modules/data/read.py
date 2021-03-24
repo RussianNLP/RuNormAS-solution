@@ -241,6 +241,10 @@ def add_data_reader_arguments(parser):
         default=None,
         help='number of beams while generation'
     )
+    group.add_argument('--loss_only_norm', action='store_true',
+                       help='Calculate loss only on norms')
+    group.add_argument('--line_by_line', action='store_true',
+                       help='Is learn line by line with pad.')
     return parser
 
 
