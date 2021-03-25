@@ -55,47 +55,6 @@ def parse_comment_line(line):
     return var_name, var_value
 
 
-def make_samples_from_doc(path, save_dir, test_size=0.1, num_tries=100):
-    with open(path, "r") as file:
-        tokens, texts = parse_token_and_metadata(file.read())
-
-    text = " ".join(texts).replace("\n", " ").strip()
-    anns = []
-    norms = []
-    tok_len = len(tokens)
-    count = int(tok_len * test_size)
-    cur_try = 0
-    while len(anns) != count and cur_try < num_tries:
-        idx = randint(0, tok_len - 1)
-        cur_try += 1
-        # print(idx, tok_len, len(tokens))
-        if tokens[idx]["upos"] not in ["PUNCT", "ADP", "PART"]:
-            if tokens[idx]["lemma"]:
-                norm = tokens[idx]["lemma"]
-                token = tokens[idx]["form"]
-                start = text.find(token)
-                if -1 < start:
-                    anns.append(f"{start} {start + len(token)}")
-                    norms.append(norm)
-                else:
-                    print(text, token)
-    bn = os.path.basename(path)[-4:]
-    with open(os.path.join(save_dir, f"{bn}.txt"), "w") as file:
-        file.write(text)
-    with open(os.path.join(save_dir, f"{bn}.norm"), "w") as file:
-        file.write("\n".join(norms))
-    with open(os.path.join(save_dir, f"{bn}.ann"), "w") as file:
-        file.write("\n".join(anns))
-    return text, anns, norms, bn
-
-
-def make_worker(save_dir, test_size=0.1, num_tries=100):
-    def func(path):
-        return make_samples_from_doc(path=path, save_dir=save_dir, test_size=test_size, num_tries=num_tries)
-
-    return func
-
-
 def add_data_reader_arguments(parser):
     group = parser.add_argument_group('parse_conllu', 'Prepare data at conllu format for reader.')
     group.add_argument(
@@ -133,11 +92,41 @@ def main():
     arg_parser = argparse.ArgumentParser(description="Prepare conllu data for reader")
     arg_parser = add_data_reader_arguments(arg_parser)
     args = arg_parser.parse_args()
-    worker = make_worker(
-        save_dir=args.output_dir, test_size=args.test_size, num_tries=100
-    )
     if not os.path.exists(args.output_dir):
         os.makedirs(args.output_dir, exist_ok=True)
+
+    def worker(path):
+        with open(path, "r") as file:
+            tokens, texts = parse_token_and_metadata(file.read())
+
+        text = " ".join(texts).replace("\n", " ").strip()
+        anns = []
+        norms = []
+        tok_len = len(tokens)
+        count = int(tok_len * args.test_size)
+        cur_try = 0
+        while len(anns) != count and cur_try < args.num_tries:
+            idx = randint(0, tok_len - 1)
+            cur_try += 1
+            # print(idx, tok_len, len(tokens))
+            if tokens[idx]["upos"] not in ["PUNCT", "ADP", "PART"]:
+                if tokens[idx]["lemma"]:
+                    norm = tokens[idx]["lemma"]
+                    token = tokens[idx]["form"]
+                    start = text.find(token)
+                    if -1 < start:
+                        anns.append(f"{start} {start + len(token)}")
+                        norms.append(norm)
+                    else:
+                        print(text, token)
+        bn = os.path.basename(path)[-4:]
+        with open(os.path.join(args.output_dir, f"{bn}.txt"), "w") as file:
+            file.write(text)
+        with open(os.path.join(args.output_dir, f"{bn}.norm"), "w") as file:
+            file.write("\n".join(norms))
+        with open(os.path.join(args.output_dir, f"{bn}.ann"), "w") as file:
+            file.write("\n".join(anns))
+
     print("Start running on ", args.num_proc, "processes")
     files = [x for x in get_all_files_from_dir(args.path) if x.endswith(".txt")]
     with ProcessPoolExecutor(args.num_proc) as pool:
