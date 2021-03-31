@@ -76,7 +76,7 @@ def add_data_reader_arguments(parser):
     group.add_argument(
         '--num_proc',
         type=int,
-        default=4,
+        default=2,
         help='Number of processes.'
     )
     group.add_argument(
@@ -119,7 +119,7 @@ def main():
                         norms.append(norm)
                     else:
                         print(text, token)
-        bn = os.path.basename(path)[-4:]
+        bn = os.path.basename(path)[:-4]
         with open(os.path.join(args.output_dir, f"{bn}.txt"), "w") as file:
             file.write(text)
         with open(os.path.join(args.output_dir, f"{bn}.norm"), "w") as file:
@@ -129,9 +129,13 @@ def main():
 
     print("Start running on ", args.num_proc, "processes")
     files = [x for x in get_all_files_from_dir(args.path) if x.endswith(".txt")]
-    with ProcessPoolExecutor(args.num_proc) as pool:
-        res = pool.map(worker, files, chunksize=1)
-        list(tqdm(res, total=len(files)))
+    if 1 < args.num_proc:
+        with ProcessPoolExecutor(args.num_proc) as pool:
+            res = pool.map(worker, files, chunksize=1)
+            _ = list(res)
+    else:
+        for file in tqdm(files, total=len(files)):
+            worker(file)
     print("Done!")
 
 

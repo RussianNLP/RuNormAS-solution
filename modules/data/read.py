@@ -69,34 +69,38 @@ class DataReader(object):
         self._make_raw_data(is_save=is_save)
 
     def _read_files(self):
-        for data_part in self.data_parts:
-            all_files = [x for x in get_all_files_from_dir(os.path.join(self.path, data_part)) if x.endswith(".txt")]
-            shard_size = len(all_files) // self.word_size
-            shard_start = self.local_rank * shard_size
-            shard_end = (self.local_rank + 1) * shard_size
-            all_files = all_files[shard_start:shard_end]
-            for fn in tqdm(
-                    all_files, total=len(all_files), leave=True,
-                    desc=f"Parsing files from {self.part} part on {self.local_rank}..."
-            ):
-                name = os.path.basename(fn)
-                name, ext = os.path.splitext(name)
+        # for data_part in self.data_parts:
+        # all_files = [x for x in get_all_files_from_dir(os.path.join(self.path, data_part)) if x.endswith(".txt")]
+        all_files = [x for x in get_all_files_from_dir(self.path) if x.endswith(".txt")]
+        shard_size = len(all_files) // self.word_size
+        shard_start = self.local_rank * shard_size
+        shard_end = (self.local_rank + 1) * shard_size
+        all_files = all_files[shard_start:shard_end]
+        for fn in tqdm(
+                all_files, total=len(all_files), leave=True,
+                desc=f"Parsing files from {self.part} part on {self.local_rank}..."
+        ):
+            data_part = "named" if "named" in fn else "generic"
+            name = os.path.basename(fn)
+            name, ext = os.path.splitext(name)
 
-                with open(fn, encoding='utf-8') as file_obj:
-                    text = file_obj.read()
-                self.texts[data_part][name] = text
+            with open(fn, encoding='utf-8') as file_obj:
+                text = file_obj.read()
+            self.texts[data_part][name] = text
 
-                with open(fn[:-4] + ".ann", encoding='utf-8') as file_obj:
-                    ann = file_obj.read().strip().split('\n')
-                self.anns[data_part][name] = ann
-                if self.part == self.train_part_name:
-                    path = fn
-                    p1, p2 = os.path.split(path)
-
+            with open(fn[:-4] + ".ann", encoding='utf-8') as file_obj:
+                ann = file_obj.read().strip().split('\n')
+            self.anns[data_part][name] = ann
+            if self.part == self.train_part_name:
+                path = fn
+                p1, p2 = os.path.split(path)
+                # print(path)
+                if not os.path.exists(path[:-4] + ".norm"):
                     path = os.path.join(p1.replace("texts_and_ann", ""), "norm", p2)
-                    with open(path[:-4] + ".norm", encoding='utf-8') as file_obj:
-                        norm = file_obj.read().strip().split('\n')
-                    self.norms[data_part][name] = norm
+                # print(path)
+                with open(path[:-4] + ".norm", encoding='utf-8') as file_obj:
+                    norm = file_obj.read().strip().split('\n')
+                self.norms[data_part][name] = norm
 
     def _make_raw_data(self, is_save=True):
         file_list = None
@@ -118,7 +122,10 @@ class DataReader(object):
                     norm = ["0"] * len(ann)
                 file_texts = []
                 for line_ann, line_norm in zip(ann, norm):
-                    start, stop = list(map(int, line_ann.strip().split()))
+                    line_ann = line_ann.strip().split()
+                    if len(line_ann) < 2:
+                        continue
+                    start, stop = list(map(int, line_ann))
                     line_norm = line_norm.strip()
                     if self.part == self.train_part_name:
                         final_text = "{bos}{text}{answ_sep}{ln}{eos}"
