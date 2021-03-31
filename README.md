@@ -6,6 +6,8 @@ Solution based on RuGPT3XL. Model was tuned on train data. The best model was tr
 Solution is archived **0.96452** (generic)	**0.95750** (named) accuracy.
 ## Usage
 Example of usage you can see [here](Usage.ipynb)
+
+Pretrained model [here](https://disk.yandex.ru/d/g5bVLObqtKCxcA)
 ## Prepare solution
 Before run all code make the following dirs:
 ```bash
