@@ -46,7 +46,7 @@ Finetune RuGPT3XL.
 
 ```bash
 cd scripts
-sh deepspeed_xl_runormas.sh
+sh deepspeed_xl_runormas_v14_130k_finetune.sh
 ```
 
 ### Predict for competition
