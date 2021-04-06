@@ -3,7 +3,7 @@ Solution of [RuNormAS competition](https://github.com/dialogue-evaluation/RuNorm
 
 Solution based on RuGPT3XL. Model was tuned on train data. The best model was trained on train data and lenta news.
 
-Solution is archived **0.96452** (generic)	**0.95750** (named) accuracy.
+Solution is archived **0.96452** (generic)	**0.95750** (named) accuracy as mesured by organizers. But if exclude evaluation errors our best model is archived **0.976700** (generic)	**0.980977** (named) accuracy
 ## Usage
 Example of usage you can see [here](Usage.ipynb)
 
@@ -78,3 +78,5 @@ cd ../test_pred/v14_130k_finetune_fixed
 7z a submission.zip *
 ```
 
+## Error analysis
+Also we add error_analysis [notebook](error_analysis.ipynb) of our best model.
