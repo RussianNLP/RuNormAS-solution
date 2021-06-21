@@ -1,5 +1,5 @@
 # Solution of RuNormAS
-Solution of [RuNormAS competition](https://github.com/dialogue-evaluation/RuNormAS) in [Dialogue2021](http://www.dialog-21.ru/evaluation/).
+Solution of [RuNormAS competition](https://github.com/dialogue-evaluation/RuNormAS) in [Dialogue2021](http://www.dialog-21.ru/evaluation/). [Paper](http://www.dialog-21.ru/media/5248/emelyanovaplusetal148.pdf).
 
 Solution based on RuGPT3XL. Model was tuned on train data. The best model was trained on train data and lenta news.
 
